@@ -167,7 +167,7 @@ async def parse_clothing(file: UploadFile = File(...), user_id: int = Form(...))
         """
 
         response = gemini_client.models.generate_content(
-            model='gemini-1.5-flash',
+            model='gemini-2.0-flash',
             contents=[
                 genai.types.Part.from_bytes(
                     data=image_bytes,
@@ -304,7 +304,7 @@ Return ONLY a JSON object (no markdown, no backticks):
 
     try:
         response = gemini_client.models.generate_content(
-            model='gemini-1.5-flash',
+            model='gemini-2.0-flash',
             contents=[prompt]
         )
         raw = response.text.strip()
