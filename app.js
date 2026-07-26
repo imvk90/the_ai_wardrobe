@@ -3,7 +3,7 @@
    Connects to FastAPI backend at API_BASE
    ═══════════════════════════════════════════════════════════════ */
 
-const API_BASE = 'http://localhost:8000';
+const API_BASE = 'https://the-ai-wardrobe.onrender.com';
 
 // ─── State ───
 let currentUser = null;   // { user_id, username }
