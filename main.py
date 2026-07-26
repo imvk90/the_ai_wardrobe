@@ -43,8 +43,8 @@ app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
 # GEMINI AI CLIENT
 # ═══════════════════════════════════════════════════════════════
 
-GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "AIzaSyD2ri4re9UZQYzGVZe6DQ_lx9lev17bWjw")
-gemini_client = genai.Client(api_key=GEMINI_API_KEY)
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
+gemini_client = genai.Client(api_key=GEMINI_API_KEY) if GEMINI_API_KEY else None
 
 # ═══════════════════════════════════════════════════════════════
 # DATABASE
@@ -147,6 +147,9 @@ async def parse_clothing(file: UploadFile = File(...), user_id: int = Form(...))
 
         with open(file_path, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
+
+        if not gemini_client:
+            raise HTTPException(status_code=400, detail="GEMINI_API_KEY environment variable is missing on Render. Please add GEMINI_API_KEY under Environment in Render dashboard.")
 
         # Read file for Gemini analysis
         with open(file_path, "rb") as f:
