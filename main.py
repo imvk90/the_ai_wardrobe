@@ -299,25 +299,26 @@ async def delete_item(item_id: int):
 @app.get("/api/recommend/{user_id}")
 async def recommend_outfit(user_id: int):
     """Use Gemini to create a styled outfit from the user's wardrobe."""
-    conn = get_db()
-    cursor = conn.cursor()
-    cursor.execute(
-        "SELECT id, brand, category, subcategory, image_filename FROM wardrobe WHERE user_id = ?",
-        (user_id,)
-    )
-    rows = cursor.fetchall()
-    conn.close()
+    try:
+        conn = get_db()
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT id, brand, category, subcategory, image_filename FROM wardrobe WHERE user_id = ?",
+            (user_id,)
+        )
+        rows = cursor.fetchall()
+        conn.close()
 
-    if len(rows) < 2:
-        raise HTTPException(status_code=400, detail="Add at least 2 items for AI styling")
+        if len(rows) < 2:
+            raise HTTPException(status_code=400, detail="Add at least 2 items for AI styling")
 
-    # Build wardrobe description for Gemini
-    items_desc = "\n".join(
-        f"  ID:{row['id']} — {row['brand']} {row['subcategory']} ({row['category']})"
-        for row in rows
-    )
+        # Build wardrobe description for Gemini
+        items_desc = "\n".join(
+            f"  ID:{row['id']} — {row['brand']} {row['subcategory']} ({row['category']})"
+            for row in rows
+        )
 
-    prompt = f"""You are an expert GenZ fashion stylist. Here is a wardrobe inventory:
+        prompt = f"""You are an expert GenZ fashion stylist. Here is a wardrobe inventory:
 {items_desc}
 
 Create ONE fire outfit from these items. Pick pieces that complement each other.
@@ -330,29 +331,29 @@ Return ONLY a JSON object (no markdown, no backticks):
 }}
 """
 
-    result = None
-    if gemini_client:
-        for m in ['gemini-2.0-flash', 'gemini-2.0-flash-lite', 'gemini-1.5-flash']:
-            try:
-                response = gemini_client.models.generate_content(
-                    model=m,
-                    contents=[prompt]
-                )
-                raw = response.text.strip()
-                match = re.search(r'\{.*\}', raw, re.DOTALL)
-                result = json.loads(match.group(0) if match else raw)
-                if result:
-                    break
-            except Exception as r_err:
-                print(f"[Recommend model {m} notice]: {r_err}")
+        result = None
+        if gemini_client:
+            for m in ['gemini-2.0-flash', 'gemini-2.0-flash-lite', 'gemini-1.5-flash']:
+                try:
+                    response = gemini_client.models.generate_content(
+                        model=m,
+                        contents=[prompt]
+                    )
+                    raw = response.text.strip()
+                    match = re.search(r'\{.*\}', raw, re.DOTALL)
+                    result = json.loads(match.group(0) if match else raw)
+                    if result:
+                        break
+                except Exception as r_err:
+                    print(f"[Recommend model {m} notice]: {r_err}")
 
-    if not result:
-        result = {
-            "selected_ids": [],
-            "outfit_name": "Cyberpunk Editorial Fit",
-            "vibe": "effortless street luxe",
-            "description": "A curated blend of high-contrast silhouettes and modern street aesthetics from your personal archive."
-        }
+        if not result:
+            result = {
+                "selected_ids": [],
+                "outfit_name": "Cyberpunk Editorial Fit",
+                "vibe": "effortless street luxe",
+                "description": "A curated blend of high-contrast silhouettes and modern street aesthetics from your personal archive."
+            }
 
         # Map IDs to full item data
         items_map = {
@@ -384,6 +385,8 @@ Return ONLY a JSON object (no markdown, no backticks):
             "items": selected
         }
 
+    except HTTPException:
+        raise
     except Exception as e:
         print(f"[recommend error]: {e}")
         raise HTTPException(status_code=500, detail=str(e))
