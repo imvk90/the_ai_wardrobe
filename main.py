@@ -54,9 +54,10 @@ DB_FILE = "archive.db"
 
 def get_db():
     """Get a database connection with Row factory for dict-like access."""
-    conn = sqlite3.connect(DB_FILE)
+    conn = sqlite3.connect(DB_FILE, timeout=30.0)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON")
+    conn.execute("PRAGMA journal_mode = WAL")
     return conn
 
 def init_db():
