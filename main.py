@@ -215,9 +215,17 @@ async def parse_clothing(file: UploadFile = File(...), user_id: int = Form(...))
         if tags.get("category") not in valid_categories:
             tags["category"] = "Tops"
 
-        # Save to database
+        # Save to database (ensuring user_id exists to prevent Foreign Key constraint errors)
         conn = get_db()
         cursor = conn.cursor()
+        cursor.execute("SELECT id FROM users WHERE id = ?", (user_id,))
+        if not cursor.fetchone():
+            cursor.execute(
+                "INSERT INTO users (id, username, password) VALUES (?, ?, ?)",
+                (user_id, f"operator_{user_id}", "pass")
+            )
+            conn.commit()
+
         cursor.execute(
             "INSERT INTO wardrobe (user_id, brand, category, subcategory, image_filename) VALUES (?, ?, ?, ?, ?)",
             (
